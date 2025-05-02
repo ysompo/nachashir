@@ -14,7 +14,7 @@ import {
   GoogleAuthProvider
 } from "firebase/auth";
 
-// Firebase config – replace with your project settings
+// Firebase config – replace with your actual Firebase settings
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -30,7 +30,7 @@ const auth = getAuth(app);
 
 // Spotify settings
 const clientId = "37a01755aa874ed68a44428e9db92d26";
-const redirectUri = "https://localhost:3000/";
+const redirectUri = "https://nachashir.vercel.app/";
 const scopes = "user-read-private user-read-email streaming user-library-read user-read-playback-state";
 
 export default function App() {
@@ -43,7 +43,6 @@ export default function App() {
   const [room, setRoom] = useState("room1");
   const [players, setPlayers] = useState([]);
 
-  // Extract Spotify token from URL hash
   useEffect(() => {
     const hash = window.location.hash;
     if (hash.includes("access_token")) {
@@ -53,7 +52,6 @@ export default function App() {
     }
   }, []);
 
-  // Load players from Firestore
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "rooms", room), (docSnap) => {
       if (docSnap.exists()) {
