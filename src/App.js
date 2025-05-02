@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { generateCodeVerifier, generateCodeChallenge } from "./utils/pkce";
-import { generateCodeVerifier, generateCodeChallenge } from "./utils/pkce";
 
 // Spotify config
 const clientId = "37a01755aa874ed68a44428e9db92d26";
