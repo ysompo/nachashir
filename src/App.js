@@ -1,5 +1,5 @@
 // נחשיר - אפליקציה מרובת משתתפים לניחוש שירים בעברית עם אינטגרציה לספוטיפיי
-// Force Vercel redeploy to apply correct Spotify redirect URI
+// Triggering Vercel redeploy to fix Spotify redirect
 
 import React, { useState, useEffect } from "react";
 import { initializeApp } from "firebase/app";
