@@ -48,8 +48,16 @@ export default function App() {
     const hash = window.location.hash;
     if (hash.includes("access_token")) {
       const token = new URLSearchParams(hash.substring(1)).get("access_token");
+      console.log("✅ Got token from hash:", token);
+      localStorage.setItem("spotify_token", token);
       setSpotifyToken(token);
       window.location.hash = "";
+    } else {
+      const token = localStorage.getItem("spotify_token");
+      if (token) {
+        console.log("✅ Loaded token from localStorage");
+        setSpotifyToken(token);
+      }
     }
   }, []);
 
@@ -141,4 +149,3 @@ export default function App() {
     </div>
   );
 }
-
