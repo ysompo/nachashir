@@ -1,20 +1,10 @@
+// Nachashir - Full App.js with PKCE Spotify Login and Firebase
+
 import React, { useState, useEffect } from "react";
+import { generateCodeVerifier, generateCodeChallenge } from "./utils/pkce";
 import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  onSnapshot
-} from "firebase/firestore";
-import {
-  getAuth,
-  signInWithPopup,
-  GoogleAuthProvider
-} from "firebase/auth";
-import {
-  generateCodeVerifier,
-  generateCodeChallenge
-} from "./utils/pkce";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
 
 // Firebase config
 const firebaseConfig = {
@@ -23,15 +13,13 @@ const firebaseConfig = {
   projectId: "nacheshir",
   storageBucket: "nacheshir.appspot.com",
   messagingSenderId: "563068582138",
-  appId: "1:563068582138:web:a4b04d1bacf1207a39f143",
-  measurementId: "G-VLHNYGWK6N"
+  appId: "1:563068582138:web:a4b04d1bacf1207a39f143"
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-// Spotify config
 const clientId = "37a01755aa874ed68a44428e9db92d26";
 const redirectUri = "https://nachashir.vercel.app/";
 const scopes = "user-read-private user-read-email streaming user-library-read user-read-playback-state";
@@ -39,16 +27,13 @@ const scopes = "user-read-private user-read-email streaming user-library-read us
 export default function App() {
   const [user, setUser] = useState(null);
   const [spotifyToken, setSpotifyToken] = useState(null);
-  const [song, setSong] = useState(null);
-  const [guess, setGuess] = useState("");
-  const [result, setResult] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [room] = useState("room1");
   const [players, setPlayers] = useState([]);
-  const room = "room1";
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
+    console.log("Spotify code:", code);
 
     if (code && !spotifyToken) {
       const verifier = localStorage.getItem("verifier");
@@ -57,17 +42,13 @@ export default function App() {
       }
     } else {
       const storedToken = localStorage.getItem("spotify_token");
-      if (storedToken) {
-        setSpotifyToken(storedToken);
-      }
+      if (storedToken) setSpotifyToken(storedToken);
     }
   }, []);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "rooms", room), (docSnap) => {
-      if (docSnap.exists()) {
-        setPlayers(docSnap.data().players || []);
-      }
+      if (docSnap.exists()) setPlayers(docSnap.data().players || []);
     });
     return () => unsub();
   }, [room]);
@@ -89,11 +70,14 @@ export default function App() {
     const challenge = await generateCodeChallenge(verifier);
     localStorage.setItem("verifier", verifier);
 
-    const url = `https://accounts.spotify.com/authorize?client_id=${clientId}` +
-                `&response_type=code` +
-                `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-                `&scope=${encodeURIComponent(scopes)}` +
-                `&code_challenge_method=S256&code_challenge=${challenge}`;
+    const url = `https://accounts.spotify.com/authorize?` +
+      `client_id=${clientId}` +
+      `&response_type=code` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&scope=${encodeURIComponent(scopes)}` +
+      `&code_challenge_method=S256` +
+      `&code_challenge=${challenge}`;
+
     window.location.href = url;
   };
 
@@ -101,60 +85,28 @@ export default function App() {
     const body = new URLSearchParams({
       client_id: clientId,
       grant_type: "authorization_code",
-      code: code,
+      code,
       redirect_uri: redirectUri,
       code_verifier: verifier
     });
 
     try {
-      const response = await fetch("https://accounts.spotify.com/api/token", {
+      const res = await fetch("https://accounts.spotify.com/api/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body
+        body
       });
-      const data = await response.json();
+      const data = await res.json();
       if (data.access_token) {
         localStorage.setItem("spotify_token", data.access_token);
         setSpotifyToken(data.access_token);
         window.history.replaceState({}, document.title, "/");
       } else {
-        console.error("Token exchange failed", data);
+        console.error("Spotify token error:", data);
       }
-    } catch (error) {
-      console.error("Token request error", error);
+    } catch (err) {
+      console.error("Token request error", err);
     }
-  };
-
-  const fetchSpotifySong = async () => {
-    if (!spotifyToken) return;
-    const res = await fetch("https://api.spotify.com/v1/recommendations?seed_genres=pop&limit=1", {
-      headers: { Authorization: `Bearer ${spotifyToken}` }
-    });
-    const data = await res.json();
-    if (data.tracks && data.tracks.length > 0) {
-      const track = data.tracks[0];
-      setSong({
-        title: track.name,
-        artist: track.artists.map(a => a.name).join(", "),
-        preview_url: track.preview_url
-      });
-    }
-  };
-
-  const handlePlay = () => {
-    if (!song?.preview_url) return;
-    const audio = new Audio(song.preview_url);
-    audio.play();
-    setIsPlaying(true);
-    setTimeout(() => {
-      audio.pause();
-      setIsPlaying(false);
-    }, 5000);
-  };
-
-  const handleSubmit = () => {
-    const isCorrect = guess.trim().toLowerCase() === song.title.toLowerCase();
-    setResult(isCorrect ? "נכון!" : `טעות - התשובה הנכונה: ${song.title}`);
   };
 
   return (
@@ -165,25 +117,7 @@ export default function App() {
       {user && <div>שלום, {user.displayName}</div>}
 
       {!spotifyToken && <button onClick={loginWithSpotify}>התחבר לספוטיפיי</button>}
-      {spotifyToken && <button onClick={fetchSpotifySong}>בחר שיר מספוטיפיי</button>}
-
-      {song && (
-        <div style={{ marginTop: "2rem" }}>
-          <button onClick={handlePlay} disabled={isPlaying || !song.preview_url}>
-            {isPlaying ? "מנגן..." : "נגן רמז"}
-          </button>
-          <br /><br />
-          <input
-            placeholder="מה שם השיר?"
-            value={guess}
-            onChange={e => setGuess(e.target.value)}
-            style={{ padding: "0.5rem", width: "300px" }}
-          />
-          <br /><br />
-          <button onClick={handleSubmit}>שלח ניחוש</button>
-          {result && <div style={{ marginTop: "1rem", fontWeight: "bold" }}>{result}</div>}
-        </div>
-      )}
+      {spotifyToken && <div style={{ marginTop: "1rem" }}>✅ מחובר לספוטיפיי</div>}
     </div>
   );
 }
