@@ -28,10 +28,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// ✅ Spotify configuration
+// Spotify constants
 const clientId = "37a01755aa874ed68a44428e9db92d26";
 const redirectUri = "https://nachashir.vercel.app/";
 const scopes = "user-read-private user-read-email streaming user-library-read user-read-playback-state";
+const spotifyUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(
+  redirectUri
+)}&scope=${encodeURIComponent(scopes)}`;
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -43,7 +46,7 @@ export default function App() {
   const [room, setRoom] = useState("room1");
   const [players, setPlayers] = useState([]);
 
-  // ✅ Load Spotify token from URL hash or localStorage
+  // Get token from URL or localStorage
   useEffect(() => {
     const hash = window.location.hash;
     if (hash.includes("access_token")) {
@@ -57,7 +60,6 @@ export default function App() {
     }
   }, []);
 
-  // 🔁 Sync players from Firebase
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "rooms", room), (docSnap) => {
       if (docSnap.exists()) {
@@ -67,7 +69,6 @@ export default function App() {
     return () => unsub();
   }, [room]);
 
-  // 🔐 Google login
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
@@ -80,16 +81,6 @@ export default function App() {
     });
   };
 
-  // 🎧 Spotify login
-  const loginWithSpotify = () => {
-    const url = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(
-      redirectUri
-    )}&scope=${encodeURIComponent(scopes)}`;
-    console.log("🔗 Redirecting to Spotify:", url);
-    window.location.href = url;
-  };
-
-  // 🎵 Fetch track
   const fetchSpotifySong = async () => {
     if (!spotifyToken) return;
     const res = await fetch("https://api.spotify.com/v1/recommendations?seed_genres=pop&limit=1", {
@@ -106,7 +97,6 @@ export default function App() {
     }
   };
 
-  // ▶️ Play preview
   const handlePlay = () => {
     if (!song?.preview_url) return;
     const audio = new Audio(song.preview_url);
@@ -118,7 +108,6 @@ export default function App() {
     }, 5000);
   };
 
-  // 📝 Check guess
   const handleSubmit = () => {
     const isCorrect = guess.trim().toLowerCase() === song.title.toLowerCase();
     setResult(isCorrect ? "נכון!" : `טעות - התשובה הנכונה: ${song.title}`);
@@ -131,8 +120,28 @@ export default function App() {
       {!user && <button onClick={handleLogin}>התחבר עם גוגל</button>}
       {user && <div>שלום, {user.displayName}</div>}
 
-      {!spotifyToken && <button onClick={loginWithSpotify}>התחבר לספוטיפיי</button>}
-      {spotifyToken && <button onClick={fetchSpotifySong}>בחר שיר מספוטיפיי</button>}
+      {!spotifyToken && (
+        <a
+          href={spotifyUrl}
+          style={{
+            display: "inline-block",
+            backgroundColor: "#1DB954",
+            color: "white",
+            padding: "0.5rem 1rem",
+            textDecoration: "none",
+            borderRadius: "4px",
+            fontWeight: "bold",
+            marginTop: "1rem"
+          }}
+        >
+          התחבר לספוטיפיי
+        </a>
+      )}
+      {spotifyToken && (
+        <button onClick={fetchSpotifySong} style={{ marginTop: "1rem" }}>
+          בחר שיר מספוטיפיי
+        </button>
+      )}
 
       {song && (
         <div style={{ marginTop: "2rem" }}>
