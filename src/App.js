@@ -126,7 +126,15 @@ export default function App() {
       {!user && <button onClick={handleLogin}>התחבר עם גוגל</button>}
       {user && <div>שלום, {user.displayName}</div>}
 
-      {!spotifyToken && <button onClick={loginWithSpotify}>התחבר לספוטיפיי</button>}
+      {!spotifyToken && (
+  <a
+    href={`https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=${encodeURIComponent(scopes)}`}
+    style={{ padding: "0.5rem 1rem", background: "#1DB954", color: "white", textDecoration: "none", borderRadius: "5px", display: "inline-block" }}
+  >
+    התחבר לספוטיפיי
+  </a>
+)}
+
       {spotifyToken && <button onClick={fetchSpotifySong}>בחר שיר מספוטיפיי</button>}
 
       {song && (
