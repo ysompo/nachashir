@@ -1,3 +1,5 @@
+// נחשיר - אפליקציה מרובת משתתפים לניחוש שירים בעברית עם אינטגרציה לספוטיפיי
+
 import React, { useState, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import {
@@ -12,7 +14,7 @@ import {
   GoogleAuthProvider
 } from "firebase/auth";
 
-// Firebase config – replace with your actual Firebase credentials
+// 🔐 Firebase config – replace with your actual credentials
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -26,11 +28,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Spotify constants
+// 🎵 Spotify auth
 const clientId = "37a01755aa874ed68a44428e9db92d26";
 const redirectUri = "https://nachashir.vercel.app/";
 const scopes = "user-read-private user-read-email streaming user-library-read user-read-playback-state";
-const spotifyUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
+const spotifyUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(
+  redirectUri
+)}&scope=${encodeURIComponent(scopes)}`;
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -42,7 +46,7 @@ export default function App() {
   const [room, setRoom] = useState("room1");
   const [players, setPlayers] = useState([]);
 
-  // ✅ Extract Spotify token from redirect
+  // ✅ Extract token from hash or localStorage
   useEffect(() => {
     const hash = window.location.hash;
     if (hash.includes("access_token")) {
@@ -58,6 +62,7 @@ export default function App() {
     }
   }, []);
 
+  // 🔄 Load players in room
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "rooms", room), (docSnap) => {
       if (docSnap.exists()) {
@@ -67,6 +72,7 @@ export default function App() {
     return () => unsub();
   }, [room]);
 
+  // 🔐 Google auth
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
@@ -79,6 +85,7 @@ export default function App() {
     });
   };
 
+  // 🎵 Fetch one random Spotify song
   const fetchSpotifySong = async () => {
     if (!spotifyToken) return;
     const res = await fetch("https://api.spotify.com/v1/recommendations?seed_genres=pop&limit=1", {
@@ -95,6 +102,7 @@ export default function App() {
     }
   };
 
+  // ▶️ Play 5 sec snippet
   const handlePlay = () => {
     if (!song?.preview_url) return;
     const audio = new Audio(song.preview_url);
@@ -106,6 +114,7 @@ export default function App() {
     }, 5000);
   };
 
+  // ✔ Guess song
   const handleSubmit = () => {
     const isCorrect = guess.trim().toLowerCase() === song.title.toLowerCase();
     setResult(isCorrect ? "נכון!" : `טעות - התשובה הנכונה: ${song.title}`);
